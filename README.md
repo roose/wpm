@@ -7,6 +7,7 @@ I'm writing this for fun and learning Nim
 ## Building
 
 x32 — `nim c -d:release --cpu:i386 --os:windows --passC:-m32 --passL:-m32 wpm.nim`
+
 x64 — `nim c -d:release wpm.nim`
 
 ## Installing
