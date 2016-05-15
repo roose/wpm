@@ -1,24 +1,11 @@
 import os, osproc, strutils, json, marshal, pegs, terminal, httpclient, times
-import nuuid
-
-type
-  PluginJson = object
-    ID: string
-    ActionKeywords: seq[string]
-    Name: string
-    Description: string
-    Author: string
-    Version: string
-    Language: string
-    Website: string
-    IcoPath: string
-    ExecuteFileName: string
+import nuuid, zip/zipfiles, plugininfo
 
 const
     MAX_AGE = 7*24*60*60
 
 let
-  version = "0.1.0"
+  version = "0.2.0"
   help = """
 Wox Plugin Manager $1
 
@@ -29,6 +16,7 @@ where <command> is one of:
   list, ls        list installed plugins
   search          search for a specified plugin
   refresh         refresh plugins list
+  pack            pack developing plugin files to one .wox file
 
 Options:
   -h,--help       show this help
@@ -68,7 +56,7 @@ proc init() =
     if exitCode == QuitSuccess and name.len > 0:
       defaultAuthor = name.strip()
 
-  var result = PluginJson(
+  var result = Plugin(
     ID: id,
     ActionKeywords: @[baseName],
     Name: baseName,
@@ -127,10 +115,6 @@ proc init() =
   else:
       echo "Aborted."
 
-  # let pluginJson = pretty(parseJson($$result))
-  # echo pluginJson
-  # writeFile("test.json", pluginJson)
-
 proc list() =
   let path = joinPath(getEnv("appdata"), "Wox\\Plugins")
   if existsDir(path):
@@ -141,7 +125,6 @@ proc list() =
         echo pluginFile["Name"].str & " " & pluginFile["Version"].str
       else:
         styledEcho fgRed, "Incorrect plugin in folder '$1'" % path.splitPath.tail
-        # styledEcho("\033[1;31mbold red text\033[0m\n")
   else:
     echo "You use old Wox version, please update it"
 
@@ -178,6 +161,43 @@ proc search(search: string) =
   if not found:
     echo "No plugins found."
 
+proc pack(path: string = "") =
+
+  proc files(pluginPath: string): seq[string] =
+    result = @[]
+    for kind, path in walkDir(pluginPath, true):
+      if kind == pcDir:
+        let dirPath = path
+        for kind, path in walkDir(joinPath(pluginPath, path), true):
+          result.add(dirPath / path)
+      else:
+        result.add(path)
+
+  proc zipFiles(basePath: string): string =
+    var za: ZipArchive
+    let zipFilePath = joinPath(getTempDir(), "plugin.zip")
+    var zipFile = za.open(zipFilePath, fmWrite)
+    if zipFile:
+      for file in files(basePath):
+        if splitFile(file).ext != ".db":
+          za.addFile(file, joinPath(basePath, file))
+
+    za.close()
+    return zipFilePath
+
+  let currDir = getCurrentDir()
+  var path = if path == "": currDir else: path
+
+  if fileExists(joinPath(path, "plugin.json")):
+    # todo: check existence of zlib library
+    let pluginZip = zipFiles(path)
+    let plugin = getPluginInfo(path / "plugin.json")
+    let name = "$1.$2.wox".format(plugin.Name, plugin.Version)
+    copyFile(pluginZip, currDir / name)
+    echo "done, path: " & currDir / name
+  else:
+    echo "could not find the plugin in the specified directory"
+
 when isMainModule:
   if args.len != 0:
     case args[0]:
@@ -195,6 +215,9 @@ when isMainModule:
           search(args[1])
       of "refresh":
         refresh()
+      of "pack":
+        var path = if args.len > 1: args[1] else: ""
+        pack(path)
       of "-h", "--help":
         echo help
       of "-v", "--version":

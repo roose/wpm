@@ -6,9 +6,7 @@ I'm writing this for fun and learning Nim
 
 ## Building
 
-x32 — `nim c -d:release --cpu:i386 --os:windows --passC:-m32 --passL:-m32 wpm.nim`
-
-x64 — `nim c -d:release wpm.nim`
+`nim c -d:release --cincludes:zlib\include -l:zlib1.dll --cpu:i386 -t:-m32 -l:-m32 -t:-DWIN32 wpm.nim`
 
 ## Installing
 
@@ -24,6 +22,7 @@ where <command> is one of:
   list, ls        list installed plugins
   search          search for a specified plugin
   refresh         refresh plugins list
+  pack            pack developing plugin files to one .wox file
 
 Options:
   -h,--help       show this help
@@ -34,5 +33,5 @@ Options:
 ## Todo
 
 - [ ] `wpm install` - install plugin(s)
-- [ ] `wpm pack` - pack developing plugin files to one .wox file
+- [x] `wpm pack` - pack developing plugin files to one .wox file
  
