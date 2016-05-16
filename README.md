@@ -6,7 +6,7 @@ I'm writing this for fun and learning Nim
 
 ## Building
 
-`nim c -d:release --cincludes:zlib\include -l:zlib1.dll --cpu:i386 -t:-m32 -l:-m32 -t:-DWIN32 wpm.nim`
+`nim release build.nims`
 
 ## Installing
 
