@@ -166,12 +166,13 @@ proc pack(path: string = "") =
   proc files(pluginPath: string): seq[string] =
     result = @[]
     for kind, path in walkDir(pluginPath, true):
-      if kind == pcDir:
-        let dirPath = path
-        for kind, path in walkDir(joinPath(pluginPath, path), true):
-          result.add(dirPath / path)
-      else:
-        result.add(path)
+      if not path.startsWith(".git"):
+        if kind == pcDir:
+          let dirPath = path
+          for kind, path in walkDir(joinPath(pluginPath, path), true):
+            result.add(dirPath / path)
+        else:
+          result.add(path)
 
   proc zipFiles(basePath: string): string =
     var za: ZipArchive
